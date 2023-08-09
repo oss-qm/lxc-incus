@@ -1,0 +1,24 @@
+Source: lxc-incus
+Section: admin
+Priority: optional
+Maintainer: Enrico Weigelt <info@metux.net>
+Build-Depends: debhelper (>=11~),
+               shellcheck,
+               libdqlite-dev,
+               libudev-dev,
+               libcap-dev,
+               libacl1-dev,
+               lxc-dev,
+               pkg-config,
+               golang-1.19-go,
+               go-md2man
+Standards-Version: 4.5.1
+Rules-Requires-Root: no
+
+Package: lxc
+Architecture: linux-any
+Multi-Arch: foreign
+Depends: ${misc:Depends},
+         ${shlibs:Depends},
+Suggests: containernetworking-plugins,
+Description: linux containers project

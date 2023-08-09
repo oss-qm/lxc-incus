@@ -11,6 +11,7 @@ TAG_SQLITE3=$(shell printf "$(HASH)include <dqlite.h>\nvoid main(){dqlite_node_i
 GOPATH ?= $(shell $(GO) env GOPATH)
 CGO_LDFLAGS_ALLOW ?= (-Wl,-wrap,pthread_create)|(-Wl,-z,now)
 SPHINXENV=doc/.sphinx/venv/bin/activate
+GO_BUILD_FLAGS ?=
 
 ifneq "$(wildcard vendor)" ""
 	RAFT_PATH=$(CURDIR)/vendor/raft
@@ -31,30 +32,30 @@ ifeq "$(TAG_SQLITE3)" ""
 	exit 1
 endif
 
-	CC="$(CC)" CGO_LDFLAGS_ALLOW="$(CGO_LDFLAGS_ALLOW)" $(GO) install -v -tags "$(TAG_SQLITE3)" $(DEBUG) ./...
-	CGO_ENABLED=0 $(GO) install -v -tags netgo ./cmd/incus-migrate
-	CGO_ENABLED=0 $(GO) install -v -tags agent,netgo ./cmd/incus-agent
+	CC="$(CC)" CGO_LDFLAGS_ALLOW="$(CGO_LDFLAGS_ALLOW)" $(GO) install -v -tags "$(TAG_SQLITE3)" $(DEBUG) $(GO_BUILD_FLAGS) ./...
+	CGO_ENABLED=0 $(GO) install -v -tags netgo $(GO_BUILD_FLAGS) ./cmd/incus-migrate
+	CGO_ENABLED=0 $(GO) install -v -tags agent,netgo $(GO_BUILD_FLAGS) ./cmd/incus-agent
 	@echo "Incus built successfully"
 
 .PHONY: client
 client:
-	$(GO) install -v -tags "$(TAG_SQLITE3)" $(DEBUG) ./cmd/inc
+	$(GO) install -v -tags "$(TAG_SQLITE3)" $(DEBUG) $(GO_BUILD_FLAGS) ./cmd/inc
 	@echo "Incus client built successfully"
 
 .PHONY: incus-agent
 incus-agent:
-	CGO_ENABLED=0 $(GO) install -v -tags agent,netgo ./cmd/incus-agent
+	CGO_ENABLED=0 $(GO) install -v -tags agent,netgo $(GO_BUILD_FLAGS) ./cmd/incus-agent
 	@echo "Incus agent built successfully"
 
 .PHONY: incus-migrate
 incus-migrate:
-	CGO_ENABLED=0 $(GO) install -v -tags netgo ./cmd/incus-migrate
+	CGO_ENABLED=0 $(GO) install -v -tags netgo $(GO_BUILD_FLAGS) ./cmd/incus-migrate
 	@echo "Incus migration tool built successfully"
 
 .PHONY: incus-doc
 incus-doc:
 	@$(GO) version > /dev/null 2>&1 || { echo "go is not installed for incus-doc installation."; exit 1; }
-	cd incusd/config/generate && CGO_ENABLED=0 $(GO) build -o $(GOPATH)/bin/incus-doc
+	cd incusd/config/generate && CGO_ENABLED=0 $(GO) build -o $(GOPATH)/bin/incus-doc $(GO_BUILD_FLAGS)
 	@echo "Incus documentation generator built successfully"
 
 .PHONY: deps
@@ -106,7 +107,7 @@ update-protobuf:
 
 .PHONY: update-schema
 update-schema:
-	cd incusd/db/generate && $(GO) build -o $(GOPATH)/bin/incus-generate -tags "$(TAG_SQLITE3)" $(DEBUG) && cd -
+	cd incusd/db/generate && $(GO) build -o $(GOPATH)/bin/incus-generate -tags "$(TAG_SQLITE3)" $(DEBUG) $(GO_BUILD_FLAGS) && cd -
 	$(GO) generate ./...
 	gofmt -s -w ./incusd/db/
 	goimports -w ./incusd/db/
@@ -115,7 +116,7 @@ update-schema:
 .PHONY: update-api
 update-api:
 ifeq "$(INCUS_OFFLINE)" ""
-	(cd / ; $(GO) install -v -x github.com/go-swagger/go-swagger/cmd/swagger@latest)
+	(cd / ; $(GO) install $(GO_BUILD_FLAGS) -v -x github.com/go-swagger/go-swagger/cmd/swagger@latest)
 endif
 	swagger generate spec -o doc/rest-api.yaml -w ./incusd -m
 
@@ -158,9 +159,9 @@ ifeq "$(TAG_SQLITE3)" ""
 	exit 1
 endif
 
-	CC="$(CC)" CGO_LDFLAGS_ALLOW="$(CGO_LDFLAGS_ALLOW)" $(GO) install -v -tags "$(TAG_SQLITE3) logdebug" $(DEBUG) ./...
-	CGO_ENABLED=0 $(GO) install -v -tags "netgo,logdebug" ./cmd/incus-migrate
-	CGO_ENABLED=0 $(GO) install -v -tags "agent,netgo,logdebug" ./cmd/incus-agent
+	CC="$(CC)" CGO_LDFLAGS_ALLOW="$(CGO_LDFLAGS_ALLOW)" $(GO) install $(GO_BUILD_FLAGS) -v -tags "$(TAG_SQLITE3) logdebug" $(DEBUG) ./...
+	CGO_ENABLED=0 $(GO) install $(GO_BUILD_FLAGS) -v -tags "netgo,logdebug" ./cmd/incus-migrate
+	CGO_ENABLED=0 $(GO) install $(GO_BUILD_FLAGS) -v -tags "agent,netgo,logdebug" ./cmd/incus-agent
 	@echo "Incus built successfully"
 
 .PHONY: nocache
@@ -170,9 +171,9 @@ ifeq "$(TAG_SQLITE3)" ""
 	exit 1
 endif
 
-	CC="$(CC)" CGO_LDFLAGS_ALLOW="$(CGO_LDFLAGS_ALLOW)" $(GO) install -a -v -tags "$(TAG_SQLITE3)" $(DEBUG) ./...
-	CGO_ENABLED=0 $(GO) install -a -v -tags netgo ./cmd/incus-migrate
-	CGO_ENABLED=0 $(GO) install -a -v -tags agent,netgo ./cmd/incus-agent
+	CC="$(CC)" CGO_LDFLAGS_ALLOW="$(CGO_LDFLAGS_ALLOW)" $(GO) $(GO_BUILD_FLAGS) install -a -v -tags "$(TAG_SQLITE3)" $(DEBUG) ./...
+	CGO_ENABLED=0 $(GO) install $(GO_BUILD_FLAGS) -a -v -tags netgo ./cmd/incus-migrate
+	CGO_ENABLED=0 $(GO) install $(GO_BUILD_FLAGS) -a -v -tags agent,netgo ./cmd/incus-agent
 	@echo "Incus built successfully"
 
 race:
@@ -181,19 +182,19 @@ ifeq "$(TAG_SQLITE3)" ""
 	exit 1
 endif
 
-	CC="$(CC)" CGO_LDFLAGS_ALLOW="$(CGO_LDFLAGS_ALLOW)" $(GO) install -race -v -tags "$(TAG_SQLITE3)" $(DEBUG) ./...
-	CGO_ENABLED=0 $(GO) install -v -tags netgo ./cmd/incus-migrate
-	CGO_ENABLED=0 $(GO) install -v -tags agent,netgo ./cmd/incus-agent
+	CC="$(CC)" CGO_LDFLAGS_ALLOW="$(CGO_LDFLAGS_ALLOW)" $(GO) install $(GO_BUILD_FLAGS) -race -v -tags "$(TAG_SQLITE3)" $(DEBUG) ./...
+	CGO_ENABLED=0 $(GO) install $(GO_BUILD_FLAGS) -v -tags netgo ./cmd/incus-migrate
+	CGO_ENABLED=0 $(GO) install $(GO_BUILD_FLAGS) -v -tags agent,netgo ./cmd/incus-agent
 	@echo "Incus built successfully"
 
 .PHONY: check
 check: default
 ifeq "$(INCUS_OFFLINE)" ""
-	(cd / ; $(GO) install -v -x github.com/rogpeppe/godeps@latest)
-	(cd / ; $(GO) install -v -x github.com/tsenart/deadcode@latest)
-	(cd / ; $(GO) install -v -x golang.org/x/lint/golint@latest)
+	(cd / ; $(GO) install -v $(GO_BUILD_FLAGS) -x github.com/rogpeppe/godeps@latest)
+	(cd / ; $(GO) install -v $(GO_BUILD_FLAGS) -x github.com/tsenart/deadcode@latest)
+	(cd / ; $(GO) install -v $(GO_BUILD_FLAGS) -x golang.org/x/lint/golint@latest)
 endif
-	CGO_LDFLAGS_ALLOW="$(CGO_LDFLAGS_ALLOW)" $(GO) test -v -tags "$(TAG_SQLITE3)" $(DEBUG) ./...
+	CGO_LDFLAGS_ALLOW="$(CGO_LDFLAGS_ALLOW)" $(GO) test $(GO_BUILD_FLAGS) -v -tags "$(TAG_SQLITE3)" $(DEBUG) ./...
 	cd test && ./main.sh
 
 .PHONY: dist
@@ -244,7 +245,7 @@ update-po:
 .PHONY: update-pot
 update-pot:
 ifeq "$(INCUS_OFFLINE)" ""
-	(cd / ; $(GO) install -v -x github.com/snapcore/snapd/i18n/xgettext-go@2.57.1)
+	(cd / ; $(GO) install $(GO_BUILD_FLAGS) -v -x github.com/snapcore/snapd/i18n/xgettext-go@2.57.1)
 endif
 	xgettext-go -o po/$(DOMAIN).pot --add-comments-tag=TRANSLATORS: --sort-output --package-name=$(DOMAIN) --msgid-bugs-address=lxc-users@lists.linuxcontainers.org --keyword=i18n.G --keyword-plural=i18n.NG cmd/inc/*.go internal/cliconfig/*.go
 

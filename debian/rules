@@ -1,0 +1,27 @@
+#!/usr/bin/make -f
+
+include /usr/share/dpkg/default.mk
+
+export DH_VERBOSE = 1
+export GOVERSION=1.19
+export GO=/usr/lib/go-$(GOVERSION)/bin/go
+export PREFIX=/usr
+export BUILDTAGS=no_systemd seccomp apparmor
+export GO_BUILDTAGS=$(BUILDTAGS)
+export GO_BUILD_FLAGS=-buildvcs=false -mod=readonly
+
+export VERSION=$(DEB_VERSION_UPSTREAM)
+export REVISION=$(DEB_VERSION)
+
+%:
+	git config --global --add safe.directory `pwd` || true
+	dh $@
+
+override_dh_auto_test:
+	: # do nothing
+
+#override_dh_auto_install:
+#	dh_auto_install -- install install-man install-doc
+#	install -m 644 -D debian/config.toml                    debian/containerd/etc/containerd/config.toml
+#	install -m 644 -D contrib/autocomplete/ctr              debian/containerd/usr/share/bash-completion/completions/ctr
+#	install -m 644 -D contrib/autocomplete/zsh_autocomplete debian/containerd/usr/share/zsh/vendor-completions/_ctr
